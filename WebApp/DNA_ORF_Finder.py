@@ -3,7 +3,9 @@ import streamlit as st
 import requests
 
 
-###
+########################################################################################################################
+################################################## BACKEND #############################################################
+########################################################################################################################
 
 def fetch_sequence_NCBI(accession_ID: str) -> str | int:
     """
@@ -20,6 +22,11 @@ def fetch_sequence_NCBI(accession_ID: str) -> str | int:
 
 
 def dna_seq_validity_checker(dna: str) -> int:
+    """
+    :param dna: DNA Sequence that needs to be verified
+    :return: -1 if DNA sequence is not valid, else +1
+    """
+
     for nt in dna.upper():
         if nt not in "ATGC":
             return -1
@@ -32,6 +39,7 @@ def FASTA_Parser(FASTA_seq: str) -> int | str:
     :param FASTA_seq: DNA sequence in FASTA format
     :return: The DNA sequence in one line
     """
+
     if not FASTA_seq.startswith(">"):
         return -1
     else:
@@ -49,6 +57,7 @@ def complement(dna: str) -> str:
     :param dna: DNA sequence
     :return: reverse complement of DNA sequence
     """
+
     dna = dna.upper()
     c_dna = ""
     for nucleotide in dna:
@@ -69,6 +78,7 @@ def transcribe(dna: str, strand: str) -> str:
     :param strand : Strand type [ Coding strand / Template strand]
     :return: transcribed mRNA sequence
     """
+
     dna = dna.upper()
 
     if strand == "C":
@@ -85,6 +95,7 @@ def translate(m_rna: str) -> str:
     :param m_rna: mRNA sequence
     :return: translated peptide sequence
     """
+
     codon_table = {"UUU": "F", "UUC": "F", "UUA": "L", "UUG": "L",
                    "UCU": "S", "UCC": "S", "UCA": "S", "UCG": "S",
                    "UAU": "Y", "UAC": "Y", "UAA": "", "UAG": "",
@@ -114,6 +125,12 @@ def translate(m_rna: str) -> str:
 
 
 def orf_span_finder(dna: str, strand: str) -> list[(int, int)]:
+    """
+    :param dna: DNA sequence
+    :param strand : Strand type [ Coding strand / Template strand]
+    :return: A list of tuple(s) containing start codon position and stop codon position of ORF(s)
+    """
+
     if strand == "C":
         start_codon_dna = "ATG"
         stop_codon_dna_lst = ["TAA", "TAG", "TGA"]
@@ -146,6 +163,12 @@ def orf_span_finder(dna: str, strand: str) -> list[(int, int)]:
 
 
 def orf_seq_generator(dna, span_lst: list[(int, int)]) -> list[str]:
+    """
+    :param dna: DNA sequence
+    :param span_lst: list of tuple(s) containing start codon position and stop codon position of ORF(s)
+    :return: A list containing DNA sequence(s) of ORF(s)
+    """
+
     orf_seq = []
     for start, stop in span_lst:
         orf_seq.append(dna[start:stop + 3])
@@ -154,6 +177,11 @@ def orf_seq_generator(dna, span_lst: list[(int, int)]) -> list[str]:
 
 
 def peptide_mw(peptide: str) -> float:
+    """
+    :param peptide: Amino acid sequence of a peptide
+    :return: The peptide's molecular weight
+    """
+
     AA_weights = {'A': 71.04, 'C': 103.01, 'D': 115.03, 'E': 129.04, 'F': 147.07,
                   'G': 57.02, 'H': 137.06, 'I': 113.08, 'K': 128.09, 'L': 113.08,
                   'M': 131.04, 'N': 114.04, 'P': 97.05, 'Q': 128.06, 'R': 156.10,
@@ -166,7 +194,11 @@ def peptide_mw(peptide: str) -> float:
     return round(peptide_weight, 2)
 
 
-def preview_seq(seq: str):
+def preview_seq(seq: str) -> str:
+    """
+    :param seq: sequence that needs to be previewed in website
+    :return: formatted string
+    """
     output = []
     n = 75
     for i in range(0, len(seq), n):
@@ -174,7 +206,16 @@ def preview_seq(seq: str):
     return "\n".join(output)
 
 
-def preview_ORF(orf_no, dna_orf, start, stop, strand):
+def preview_ORF(orf_no, dna_orf, start, stop, strand) -> str:
+    """
+    :param orf_no: The ORF number
+    :param dna_orf: DNA sequence of an ORF
+    :param start: ORF start index
+    :param stop: ORF stop index
+    :param strand: strand type -> Template strand / Coding strand
+    :return: formatted string
+    """
+
     if strand == "T":
         dna = (f"Coding   DNA → [{start}] {complement(dna_orf)} [{stop}]\n"
                f"Template DNA → [{start}] {dna_orf} [{stop}]\n")
@@ -203,7 +244,10 @@ def preview_ORF(orf_no, dna_orf, start, stop, strand):
     return preview
 
 
-###
+########################################################################################################################
+################################################## FRONTEND ############################################################
+########################################################################################################################
+
 
 Title = st.container()
 Intro = st.container()
@@ -213,11 +257,13 @@ ORF_prev_box = st.container()
 
 st.markdown("<style>.main {background-color: #FFFFFF;color:black;} </style>", unsafe_allow_html=True)
 
+# TITLE
 with Title:
     Title.markdown(
         "<h1 style='font-family : century gothic;text-align: center; color: Black;'><u>DNA OPEN READING FRAME FINDER<u></h1>",
         unsafe_allow_html=True)
 
+# INPUT BOX
 with Input_box:
     Input_box.markdown(
         "<h4 style='font-family : century gothic;text-align: center; color: Black;'><u>ENTER YOUR SEQUENCE or ACCESSION ID<u></h4>",
@@ -230,35 +276,41 @@ with Input_box:
     input_submit = st.form_submit_button("Submit")
 
     if input_submit:
+        # checking input type
         if input_type == "FASTA":
             chk = FASTA_Parser(input.strip())
+
+            # checking validity of FASTA sequence
             if chk == -1:
                 Input_box.error("Please, Enter a Valid FASTA Sequence.")
             else:
                 dna_seq = chk.upper()
-                seq_validity = dna_seq_validity_checker(dna_seq)
+                seq_validity = dna_seq_validity_checker(dna_seq)    # checking validity of DNA sequence
                 if seq_validity == -1:
                     chk = -1
                     Input_box.error("Please, Enter a valid DNA sequence.")
         else:
             chk = fetch_sequence_NCBI(input.strip())
+            # checking validity of ACCESSION ID
             if chk == -1:
-                Input_box.error("Please, Enter a Valid Acession ID")
+                Input_box.error("Please, Enter a Valid Accession ID")
             else:
                 dna_seq = FASTA_Parser(chk).upper()
-                seq_validity = dna_seq_validity_checker(dna_seq)
+                seq_validity = dna_seq_validity_checker(dna_seq)    # checking validity of DNA sequence
                 if seq_validity == -1:
                     chk = -1
                     Input_box.error("Please, Enter a valid DNA sequence.")
 
         if chk != -1:
-
+            
+            # generating complementary DBA sequence
             cdna_seq = complement(dna_seq)
 
             DNA_prev_box.markdown(
                 "<h4 style='font-family : century gothic;text-align: center; color: Black;'><u> DNA <u></h4>",
                 unsafe_allow_html=True)
-
+            
+            # previewing DNA strands
             if strand_type == "Coding strand":
                 DNA_prev_box.write("<p style='text-align: center; text-decoration : underline'>5'-CODING STRAND-3'</p>",
                                    unsafe_allow_html=True)
@@ -281,7 +333,8 @@ with Input_box:
             ORF_prev_box.markdown(
                 "<h4 style='font-family : century gothic;text-align: center; color: Black;'><u>OPEN READING FRAME(S)<u></h4>",
                 unsafe_allow_html=True)
-
+            
+            # generating and previewing ORF
             if strand_type == "Template strand":
 
                 template_strand_seq = dna_seq

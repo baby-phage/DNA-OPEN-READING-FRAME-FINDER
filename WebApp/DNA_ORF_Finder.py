@@ -249,9 +249,8 @@ def preview_ORF(orf_no, dna_orf, start, stop, strand) -> str:
 ########################################################################################################################
 
 st.set_page_config(
-   page_title="ORF FINDER",
-   page_icon="🧬",
-   layout="wide")
+   page_title="🧬 ORF FINDER",
+   page_icon="🌐,)
 
 Title = st.container()
 Intro = st.container()

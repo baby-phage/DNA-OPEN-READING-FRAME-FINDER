@@ -190,6 +190,10 @@ def peptide_mw(peptide: str) -> float:
     peptide_weight = 0
     for AA in peptide:
         peptide_weight += AA_weights[AA]
+    
+    water_weight = (len(peptide)-1)*18
+    
+    peptide_weight -= water_weight
 
     return round(peptide_weight, 2)
 
